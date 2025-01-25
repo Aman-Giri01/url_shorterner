@@ -1,0 +1,97 @@
+*{
+    margin:0;
+    padding:0;
+    box-sizing: border-box;
+}
+html{
+    font-size: 62.5%;
+}
+
+body{
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #fefefe;
+}
+
+.container
+{
+    width:300px;
+    aspect-ratio: 1;
+    box-shadow: 2px 2px 12px 2px rgba(0, 0, 0, 0.3);
+    padding: 12px 12px;
+    text-align: center;
+    border-radius: 5px;
+}
+
+input[type="url"],
+input[type="text"]{
+    width:100%;
+    padding: 10px;
+    border-radius: 5px;
+    font-size: 1.4rem ;
+    color:rgb(13, 12, 12);
+    border:1px solid #ddd;
+    margin: 3px 3px;
+}
+
+input[type="url"]:focus,
+input[type="text"]:focus
+{
+    box-shadow: 0 0 3px blue;
+    outline: none;
+}
+
+button
+{
+    font-size: 1.4rem;
+    color:white;
+    background-color: blue;
+    padding: 8px 20px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    margin-top: 1rem;
+    transition:all .3 ease;
+    &:hover{
+        background-color: rgba(0, 0, 255, 0.656)
+    }
+    &:active{
+        color: red;
+    }
+
+}
+h2{
+    font-size: 2.5rem;
+    margin-top: 3rem;
+    margin-bottom: 1rem;
+}
+label{
+    display: block;
+    font-size: 1.5rem;
+    text-align: left;
+    color: #555;
+    margin-bottom: .5rem;
+
+}
+form div{
+    margin-bottom: 1rem;
+}
+
+ul#shortened-urls {
+    list-style: none;
+    padding: 0;
+    margin: 20px 0 0;
+    text-align: left;
+}
+
+ul#shortened-urls li {
+    background-color: #f9f9f9;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    font-size: 14px;
+    color: #333;
+}
