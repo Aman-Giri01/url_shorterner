@@ -1,26 +1,20 @@
 import { readFile ,writeFile} from "fs/promises";
-import {createServer} from "http";
 import path from "path";
 import crypto from "crypto";
+import express from "express";
 
-const DATA_FILE=path.join("url2","data","links.json");
+
+const app=express();
+
+const PORT=process.env.PORT ||3000;
+
+const DATA_FILE=path.join("data","links.json");
+
+app.use(express.static("public"));
+app.use(express.urlencoded({extended:true}));
 
 
-const  Server=async(res,filePath,content)=>{
-    try
-    {
-        const data= await readFile(filePath,"utf-8");
-        res.writeHead(202,{"Content-Type":`${content}`});
-        res.end(data);
 
-    }
-    catch(error)
-    {
-        res.writeHead(404,{"Content-Type":"text/plain"});
-        res.end("404 page not Found");
-    }
-
-};
 
 const loadLinks=async()=>{
     try{
@@ -45,77 +39,61 @@ const saveLinks=async(links)=>{
     await writeFile(DATA_FILE,JSON.stringify(links));
 }
 
+app.get("/",async(req,res)=>{
+    try {
+        const file=await readFile(path.join("views","index.html"));
+        const links=await loadLinks();
 
+        const content=file.toString().replaceAll("{{shortend_urls}}",Object.entries(links).map(
+            ([shortCode,url])=>`<li><a href="/${shortCode}" target="_blank"> ${req.host}/${shortCode}</a> -> ${url}</li>`
+        ).join(""));
 
-const server=createServer( async (req,res)=>{
-    const url=req.url;
-    const method=req.method;
-    if(method==='GET')
-    {
-        if(url==='/' )
-        {
-           return Server(res,path.join("url2","public","index.html"),"text/html");
-        }
-        else if(url==='/style.css')
-        {
-            return Server(res,path.join("url2","public","style.css"),"text/css")
-        }
-        else if(url==="/links")
-        {
-            const links=await loadLinks();
-            res.writeHead(200,{"Content-Type":"application/json"});
-            res.end(JSON.stringify(links));
-
-        }
-        else
-        {
-            const links=await loadLinks();
-            const shortCode=url.slice(1);
-            console.log("link redirect", shortCode);
-            if(links[shortCode])
-            {
-                res.writeHead(302,{location: links[shortCode]});
-                return res.end();
-            }
-
-            res.writeHead(404,{"Content-Type":"text/plain"});
-            return res.end("shortened url not found");
-        }
+        return res.send(content);;
+        
+    } catch (error) {
+        console.error(error);
+        return res.status(500).send("Internal Server Error");
     }
-    if(method==="POST" && url==="/shorten")
-    {
-        const links=await loadLinks();   // to fetch json data
+});
 
-        let data="";
-        req.on('data',(chunk)=>data+=chunk);
+app.post("/",async(req,res)=>{
+    try {
+        const {url,shortCode}=req.body;
+        const finalShortCode=shortCode ||crypto.randomBytes(4).toString("hex"); //to check duplicate data
 
-        req.on('end',async ()=>{
-            console.log(data);
-            const {url,shortCode}=JSON.parse(data);
-            if(!url){
-                res.writeHead(400,{"Content-Type":"text/plain"});
-                return res.end("Url is required");
-            }
-
-            const finalShortCode=shortCode ||crypto.randomBytes(4).toString("hex"); //to check duplicate data
+        const links=await loadLinks();
 
             if(links[finalShortCode])
             {
-                res.writeHead(400,{"Content-Type":"text/plain"});
-                return res.end("ShortCode already exist. Please Try another.");
+                return res.status(400).send("Short code already exists. Please choose another");
 
             }
 
-            links[finalShortCode]=url;
-            await saveLinks(links);
+        links[finalShortCode]=url;
+        await saveLinks(links);
+        return res.redirect("/");
 
-            res.writeHead(200,{"Content-Type":"application/json"});
-            res.end(JSON.stringify({success:true,shortCode:finalShortCode}));
-        });
+
+    } catch (error) {
+        return res.status(500).send("Internal Server Error");
+        
     }
-
-
-
 });
 
-server.listen(3000,()=>console.log('listening server with port no. 3000'));
+app.get("/:shortCode",async(req,res)=>{
+    try {
+        const {shortCode}=req.params;
+        const links=await loadLinks();
+
+        if(!links[shortCode]) return res.status(404).send("404 error occurred.");
+
+        return res.redirect(links[shortCode]);
+    } catch (error) {
+        console.error(error);
+        return res.status(500).send("Internal server error");
+        
+    }
+});
+
+
+app.listen(3000,()=>console.log('listening server with port no.',PORT));

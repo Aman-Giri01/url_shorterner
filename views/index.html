@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h2>Url Shortener</h2>
+        <form action="/" method="post">
+            <div>
+                <label for="url"> Enter Url: </label>
+                <input type="url" id="url" name="url" required>
+               
+            </div>
+            <div>
+                <label for="shortCode">Enter ShortCode:</label> 
+                <input type="text" id="shortCode" name="shortCode" required>
+            </div>
+            <button type="submit">shorten</button>
+        </form>
+        <h2>Shortened Url</h2>
+        <ul id="shortened-urls">{{shortend_urls}}</ul>
+    </div>
+
+</body>
+</html>
