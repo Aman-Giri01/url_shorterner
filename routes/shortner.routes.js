@@ -29,6 +29,18 @@ const saveLinks=async(links)=>{
     await writeFile(DATA_FILE,JSON.stringify(links));
 }
 
+router.get("/report",(req,res)=>{
+    const student=[
+    {name:"Aman",class:"10",roll:4},
+    {name:"Ram",class:"10",roll:44},
+    {name:"Kunal",class:"10",roll:32},
+    {name:"Ramesh",class:"10",roll:25}
+
+];
+    res.render("report",{student});
+
+});
+
 router.get("/",async(req,res)=>{
     try {
         const file=await readFile(path.join("views","index.html"));
