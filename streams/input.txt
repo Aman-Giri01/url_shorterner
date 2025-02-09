@@ -1,8 +1,0 @@
-file 1-> file2
-this is the example of stream and buffers.
-
-jgkjg
-fdkgfl;fdkgflfdjkg
-fjgkgn
-dfjkdnldm
-dfs
