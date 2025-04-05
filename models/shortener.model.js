@@ -3,7 +3,7 @@ import { env } from "../config/env.js";
 
 const db=dbClient.db(env.MONGODB_DATABASE_NAME);
 
-const shortenerCollection= db.collection('shorteners');
+const shortenerCollection= db.collection('url');
 
 export const loadLinks= async ()=>{
   return shortenerCollection.find().toArray();

@@ -1,14 +1,11 @@
 import express from "express";
+import { env } from "./config/env.js";
+import { connectToDB } from "./config/db-client.js";
 import {shortenerRoots} from "./routes/shortner.routes.js";
 
 
 
 const app=express();
-
-const PORT=process.env.PORT ||3000;
-
-
-
 app.use(express.static("public"));
 
 
@@ -19,4 +16,6 @@ app.use(shortenerRoots);
 
 app.set("view engine","ejs");
 
-app.listen(3000,()=>console.log('listening server with port no.',PORT));
+await connectToDB();
+const PORT=env.PORT;
+app.listen(PORT,()=>console.log('listening server with port no.',PORT));
