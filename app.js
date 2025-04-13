@@ -2,6 +2,7 @@ import express from "express";
 import { env } from "./config/env.js";
 import { connectToDB } from "./config/db-client.js";
 import {shortenerRoots} from "./routes/shortner.routes.js";
+import { authRoute } from "./routes/auth.routes.js";
 
 
 
@@ -11,6 +12,8 @@ app.use(express.static("public"));
 
 
 app.use(express.urlencoded({extended:true}));
+
+app.use(authRoute)
 
 app.use(shortenerRoots);
 
