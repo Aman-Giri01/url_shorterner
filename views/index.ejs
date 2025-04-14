@@ -134,7 +134,23 @@
     <%- include('./partials/footer.ejs') %>
 
     <script>
+      // Simple copy to clipboard functionality
+      document.addEventListener("DOMContentLoaded", function () {
+        const copyButtons = document.querySelectorAll(".copy-btn");
 
+        copyButtons.forEach((button) => {
+          button.addEventListener("click", function () {
+            const url = this.getAttribute("data-url");
+            navigator.clipboard.writeText(url).then(() => {
+              // Visual feedback
+              this.innerHTML = '<i class="zmdi zmdi-check"></i>';
+              setTimeout(() => {
+                this.innerHTML = '<i class="zmdi zmdi-copy"></i>';
+              }, 2000);
+            });
+          });
+        });
+      });
     </script>
   </body>
 </html>

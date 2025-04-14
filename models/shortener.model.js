@@ -42,3 +42,45 @@ export const saveLinks = async (data) => {
 export const getLinkByShortCode = async (shortCode) => {
   return shortenerCollection.findOne({ shortCode });
 };
+
+
+// find link by id
+
+export const findShortLinkById = async (id) => {
+  try {
+    const shortLink = await db.collection("url").findOne({ _id: new ObjectId(id) });
+    return shortLink;
+  } catch (error) {
+    console.error("Error in findShortLinkById:", error);
+    return null;
+  }
+};
+
+// update short link
+
+export const updateShortCode = async (id, url, shortCode) => {
+  try {
+    const result = await db.collection("url").updateOne(
+      { _id: new ObjectId(id) },
+      { $set: { url, shortCode } }
+    );
+    return result;
+  } catch (error) {
+    console.error("Error in updateShortCode:", error);
+    return null;
+  }
+};
+
+
+// delete short link
+
+export const deleteShortCodeById = async (id) => {
+  try {
+    const result = await db.collection("url").deleteOne({ _id: new ObjectId(id) });
+    return result;
+  } catch (error) {
+    console.error("Error in deleteShortCodeById:", error);
+    return null;
+  }
+};
+
