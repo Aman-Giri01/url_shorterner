@@ -1,5 +1,5 @@
 import { getUserByEmail,createUser, hashPassword, comparePassword ,generateToken} from "../models/auth.model.js";
-
+import { LoginUserSchema,registerUserSchema } from "../validators/auth-validator.js";
 export const getRegisterPage=(req,res)=>{
    if(req.user) return res.redirect("/");
    return res.render("auth/register",{errors:req.flash("errors")});
@@ -16,7 +16,16 @@ export const postLogin=async(req,res)=>{
 
    if(req.user) return res.redirect("/");
 
-   const { email, password}=req.body;
+  //  const { email, password}=req.body;
+   const{data,error}= LoginUserSchema.safeParse(req.body);  //Zod validation
+     if(error){
+      const errors=error.errors[0].message;
+      req.flash("errors",errors);
+      return res.redirect("/login");
+     }
+
+     const {email, password } = data;
+
    const user= await getUserByEmail(email);
    // console.log("userExists",user);
 
@@ -50,7 +59,15 @@ export const postRegister = async (req, res) => {
    try {
       if(req.user) return res.redirect("/");
    //   console.log(req.body);
-     const { name, email, password } = req.body;
+    //  const { name, email, password } = req.body;
+    const{data,error}= registerUserSchema.safeParse(req.body);  //Zod validation
+    if(error){
+     const errors=error.errors[0].message;
+     req.flash("errors",errors);
+     return res.redirect("/register");
+    }
+
+    const { name, email, password } = data; 
  
      const userExists = await getUserByEmail(email);
    //   console.log("User exists:", userExists);
