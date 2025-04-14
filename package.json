@@ -2,11 +2,10 @@
   "name": "url_shorterner",
   "version": "1.0.0",
   "main": "app.js",
-  "type":"module",
+  "type": "module",
   "scripts": {
-  "start": "node app.js"
-}
-,
+    "start": "node app.js"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Aman-Giri01/url_shorterner.git"
@@ -20,9 +19,14 @@
   "homepage": "https://github.com/Aman-Giri01/url_shorterner#readme",
   "description": "",
   "dependencies": {
+    "argon2": "^0.41.1",
+    "connect-flash": "^0.1.1",
+    "cookie-parser": "^1.4.7",
     "dotenv": "^16.4.7",
     "ejs": "^3.1.10",
     "express": "^5.1.0",
+    "express-session": "^1.18.1",
+    "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.15.0",
     "zod": "^3.24.2"
   }

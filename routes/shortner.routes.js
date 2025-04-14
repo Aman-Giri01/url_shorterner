@@ -13,4 +13,4 @@ router.get("/:shortCode",redirectToShortLink);
 
 // Named exports
 
-export const shortenerRoots=router;
+export const shortenerRoutes=router;
