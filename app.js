@@ -1,6 +1,8 @@
 import path from "path";
 import express from "express";
 import { env } from "./config/env.js";
+
+import requestIp from "request-ip";
 // import {shortenerRoutes} from "./routes/shortener.routes.js";
 import { shortenerRoutes } from "./routes/shortner.routes.js";
 import { authRoute } from "./routes/auth.routes.js";
@@ -20,6 +22,9 @@ app.use(cookieParser());
 app.use(session({secret:"my-secret",resave:true,saveUninitialized:false}));
 
 app.use(flash());
+
+app.use(requestIp.mw());
+
 app.use(verifyAuthentication); //verify jwt
 app.use((req,res,next)=>{
   res.locals.user=req.user;

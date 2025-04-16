@@ -1,4 +1,5 @@
-import { getUserByEmail,createUser, hashPassword, comparePassword ,generateToken} from "../models/auth.model.js";
+import { getUserByEmail,createUser, hashPassword, comparePassword , authenticateUser, clearUserSession, findUserById} from "../models/auth.model.js";
+import { loadLinks } from "../models/shortener.model.js";
 import { LoginUserSchema,registerUserSchema } from "../validators/auth-validator.js";
 export const getRegisterPage=(req,res)=>{
    if(req.user) return res.redirect("/");
@@ -47,10 +48,12 @@ export const postLogin=async(req,res)=>{
    //    email:user.email,
    // });
 
-   const token = generateToken(user);
+  //  const token = generateToken(user);
 
    
-   res.cookie("access_token",token);
+  //  res.cookie("access_token",token);
+  await authenticateUser({req,res,user});
+
    res.redirect("/");
 };
 
@@ -83,7 +86,8 @@ export const postRegister = async (req, res) => {
      const user = await createUser({ name, email, password:hashedPassword });
    //   console.log("User inserted successfully:", user);
  
-     res.redirect("/login");
+     await authenticateUser({req,res,user,name,email});
+     res.redirect("/");
    } catch (err) {
    //   console.error("Registration Error:", err.message);
      res.status(500).send("Internal Server Error");
@@ -96,8 +100,39 @@ export const postRegister = async (req, res) => {
 
  }
 
- export const logoutUser=(req,res)=>{
-   res.clearCookie("access_token");
-   res.redirect('/login')
+//  export const logoutUser=(req,res)=>{
+//    res.clearCookie("access_token");
+//    res.redirect('/login')
 
- };
+//  };
+
+export const logoutUser=async(req,res)=>{
+
+  await clearUserSession(req.user.sessionId)
+  res.clearCookie("access_token");
+  res.clearCookie("refresh_token");
+  res.redirect('/login')
+
+};
+
+// get profile page
+
+export const getProfilePage=async(req,res)=>{
+  if (!req.user) return res.send("Not logged in");
+  const user= await findUserById(req.user.id);
+  if(!user) return res.redirect('/login');
+
+  const userShortLinks= await loadLinks(req.user.id);
+  // console.log("user short links",userShortLinks);
+
+  return res.render('auth/profile',{
+     user:{
+        id:user.id,
+        name:user.name,
+        email:user.email,
+        createdAt:user.createdAt,
+        links:userShortLinks,
+     },
+
+  })
+}
