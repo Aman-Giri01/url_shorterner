@@ -1,6 +1,6 @@
-import { getUserByEmail,createUser, hashPassword, comparePassword , authenticateUser, clearUserSession, findUserById} from "../models/auth.model.js";
+import { getUserByEmail,createUser, hashPassword, comparePassword , authenticateUser, clearUserSession, findUserById, sendNewVerifyEmailLink, findVerificationEmailToken, verifyUserEmailAndUpdate, clearVerifyEmailTokens, updateUserByName} from "../models/auth.model.js";
 import { loadLinks } from "../models/shortener.model.js";
-import { LoginUserSchema,registerUserSchema } from "../validators/auth-validator.js";
+import { loginUserSchema,registerUserSchema, verifyEmailSchema, verifyUserSchema } from "../validators/auth-validator.js";
 export const getRegisterPage=(req,res)=>{
    if(req.user) return res.redirect("/");
    return res.render("auth/register",{errors:req.flash("errors")});
@@ -18,7 +18,7 @@ export const postLogin=async(req,res)=>{
    if(req.user) return res.redirect("/");
 
   //  const { email, password}=req.body;
-   const{data,error}= LoginUserSchema.safeParse(req.body);  //Zod validation
+   const{data,error}= loginUserSchema.safeParse(req.body);  //Zod validation
      if(error){
       const errors=error.errors[0].message;
       req.flash("errors",errors);
@@ -87,6 +87,9 @@ export const postRegister = async (req, res) => {
    //   console.log("User inserted successfully:", user);
  
      await authenticateUser({req,res,user,name,email});
+    
+     await sendNewVerifyEmailLink({email, userId:user.id }); 
+
      res.redirect("/");
    } catch (err) {
    //   console.error("Registration Error:", err.message);
@@ -130,9 +133,96 @@ export const getProfilePage=async(req,res)=>{
         id:user.id,
         name:user.name,
         email:user.email,
+        is_email_valid:user.is_email_valid,
         createdAt:user.createdAt,
         links:userShortLinks,
      },
 
   })
+};
+
+// get verify email page
+
+export const getVerifyEmailPage= async(req,res)=>{
+  // if(!req.user || req.user.isEmailValid) return res.redirect("/");
+  if(!req.user) return res.redirect("/");
+  const user= await findUserById(req.user.id);
+
+  if(!user || user.is_email_valid) return res.redirect("/");
+
+  return res.render("auth/verify-email",{
+     email:req.user.email,
+  });
+};
+
+// resend verification link
+
+export const resendVerificationLink= async(req,res)=>{
+  if(!req.user) return res.redirect("/");
+  const user= await findUserById(req.user.id);
+
+  if(!user || user.is_email_valid) return res.redirect("/");
+
+  await sendNewVerifyEmailLink({ email: req.user.email, userId: req.user.id });
+  
+  res.redirect('/verify-email')
+
+};
+
+// verify Email token
+
+export const verifyEmailToken= async(req,res)=>{
+  const {data,error}=verifyEmailSchema.safeParse(req.query);
+
+  if(error){
+     return res.send("Verification link invalid or expires!");
+  }
+  const token= await findVerificationEmailToken(data);
+  console.log("verificationEmailToken :",token);
+  if(!token) res.send("Verification link invalid or expired!");
+
+  await verifyUserEmailAndUpdate(token.email);
+
+  await clearVerifyEmailTokens(token.email).catch(console.error);
+
+  res.redirect('/profile');
+
+
+};
+
+// getEdit Profile Page
+
+export const getEditProfilePage= async(req,res)=>{
+  if(!req.user)return res.redirect("/");
+
+  const user= await findUserById(req.user.id);
+
+  if(!user) return res.status(404).send("User Not Found");
+  console.log("USER NAME: ",user.name);
+
+  return res.render("auth/edit-profile",{
+     name: user.name,
+     errors:req.flash("errors"),
+  });
 }
+
+// postEditProfile
+
+export const postEditProfile=async(req,res)=>{
+  if(!req.user)return res.redirect("/");
+
+  const {data,error}=verifyUserSchema.safeParse(req.body);
+  if(error){
+     const errors=error.errors[0].message;
+     req.flash("errors",errors);
+     return res.redirect("/edit-profile");
+    }
+
+    await updateUserByName(req.user.id,data.name);
+
+    return res.redirect('/profile');
+
+}
+
+
+

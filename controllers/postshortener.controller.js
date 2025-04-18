@@ -164,7 +164,7 @@ export const getShortenerEditPage = async (req, res) => {
     res.render("edit-shortLink", {
       id: shortLink._id,
       url: shortLink.url,
-      shortCode: shortLink.short_code, // assuming your field name is short_code
+      shortCode: shortLink.shortCode, // assuming your field name is short_code
       errors: req.flash("errors"),
     });
   } catch (error) {
