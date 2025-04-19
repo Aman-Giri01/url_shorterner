@@ -1,6 +1,6 @@
-import { getUserByEmail,createUser, hashPassword, comparePassword , authenticateUser, clearUserSession, findUserById, sendNewVerifyEmailLink, findVerificationEmailToken, verifyUserEmailAndUpdate, clearVerifyEmailTokens, updateUserByName} from "../models/auth.model.js";
+import { getUserByEmail,createUser, hashPassword, comparePassword , authenticateUser, clearUserSession, findUserById, sendNewVerifyEmailLink, findVerificationEmailToken, verifyUserEmailAndUpdate, clearVerifyEmailTokens, updateUserByName, updateUserPassword} from "../models/auth.model.js";
 import { loadLinks } from "../models/shortener.model.js";
-import { loginUserSchema,registerUserSchema, verifyEmailSchema, verifyUserSchema } from "../validators/auth-validator.js";
+import { loginUserSchema,registerUserSchema, verifyEmailSchema, verifyPasswordSchema, verifyUserSchema } from "../validators/auth-validator.js";
 export const getRegisterPage=(req,res)=>{
    if(req.user) return res.redirect("/");
    return res.render("auth/register",{errors:req.flash("errors")});
@@ -223,6 +223,42 @@ export const postEditProfile=async(req,res)=>{
     return res.redirect('/profile');
 
 }
+
+// getChangePasswordPage
+
+export const getChangePasswordPage=async(req,res)=>{
+  if(!req.user)return res.redirect("/");
+
+  res.render('auth/change-password',{
+     errors:req.flash("errors")
+  });
+};
+
+// postChangePassword
+export const postChangePassword=async(req,res)=>{
+  const {data,error}=verifyPasswordSchema.safeParse(req.body);
+  if(error){
+     const errorMessages=error.errors.map((err)=>err.message);
+     req.flash("errors",errorMessages);
+     return res.redirect("/change-password");
+  }
+
+  const {currentPassword,newPassword}=data;
+
+  const user= await findUserById(req.user.id);
+  if(!user) return res.status(404).send("User Not Found");
+
+  const isPasswordValid=await comparePassword(currentPassword,user.password);
+  if(!isPasswordValid){
+     req.flash("errors","Current Password that you entered is invalid");
+     return res.redirect('/change-password');
+  }
+
+  await updateUserPassword({userId:user._id,newPassword});
+  console.log("data",data);
+  return res.redirect("/profile");
+}
+
 
 
 

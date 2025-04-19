@@ -425,7 +425,9 @@ export const findUserById = async (user_id) => {
         _id: 1,
         name: 1,
         email: 1,
+        password:1,
         createdAt: 1,
+        updatedAt:1,
         is_email_valid: 1,
       },
     }
@@ -589,6 +591,8 @@ export const sendNewVerifyEmailLink = async ({ userId, email }) => {
   });
 };
 
+// updateUSerByName
+
 export const updateUserByName = async (userId, name) => {
   const id = typeof userId === "string" ? new ObjectId(userId) : userId;
   return await usersCollection.updateOne(
@@ -596,3 +600,24 @@ export const updateUserByName = async (userId, name) => {
     { $set: { name } }
   );
 };
+
+// updateUserPassword
+// export const updateUserPassword = async (userId, newPassword) => {
+//   const newHashPassword= await hashPassword(newPassword);
+//   const id = typeof userId === "string" ? new ObjectId(userId) : userId;
+//   return await usersCollection.updateOne(
+//     { _id: id },
+//     { $set: {password: newHashPassword } }
+//   );
+// };
+
+export const updateUserPassword = async ({ userId, newPassword }) => {
+  const id = typeof userId === "string" ? new ObjectId(userId) : userId;
+  const newHashedPassword = await hashPassword(newPassword);
+
+  return await usersCollection.updateOne(
+    { _id: id },
+    { $set: { password: newHashedPassword } }
+  );
+};
+

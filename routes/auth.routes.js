@@ -31,6 +31,11 @@ router.route('/edit-profile')
 .get(authControllers.getEditProfilePage)
 .post(authControllers.postEditProfile);
 
+router.route('/change-password')
+.get(authControllers.getChangePasswordPage)
+.post(authControllers.postChangePassword);
+
+
 
 router.route('/logout').get(authControllers.logoutUser);
 
