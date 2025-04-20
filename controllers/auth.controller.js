@@ -1,7 +1,9 @@
 import { ObjectId } from "mongodb";
-import { getUserByEmail,createUser, hashPassword, comparePassword , authenticateUser, clearUserSession, findUserById, sendNewVerifyEmailLink, findVerificationEmailToken, verifyUserEmailAndUpdate, clearVerifyEmailTokens, updateUserByName, updateUserPassword} from "../models/auth.model.js";
+import { getUserByEmail,createUser, hashPassword, comparePassword , authenticateUser, clearUserSession, findUserById, sendNewVerifyEmailLink, findVerificationEmailToken, verifyUserEmailAndUpdate, clearVerifyEmailTokens, updateUserByName, updateUserPassword, findUserByEmail, createResetPasswordLink, getResetPasswordToken, clearResetPasswordToken} from "../models/auth.model.js";
 import { loadLinks } from "../models/shortener.model.js";
-import { loginUserSchema,registerUserSchema, verifyEmailSchema, verifyPasswordSchema, verifyUserSchema } from "../validators/auth-validator.js";
+import { forgotPasswordSchema, loginUserSchema,registerUserSchema, verifyEmailSchema, verifyPasswordSchema, verifyResetPasswordSchema, verifyUserSchema } from "../validators/auth-validator.js";
+import { getHtmlFromMjmlTemplate } from "../lib/get-html-from-mjmltemplate.js";
+import { sendEmail } from "../lib/send-email.js";
 export const getRegisterPage=(req,res)=>{
    if(req.user) return res.redirect("/");
    return res.render("auth/register",{errors:req.flash("errors")});
@@ -104,31 +106,11 @@ export const postRegister = async (req, res) => {
 
  }
 
-//  export const logoutUser=(req,res)=>{
-//    res.clearCookie("access_token");
-//    res.redirect('/login')
-
-//  };
-
-// export const logoutUser=async(req,res)=>{
-
-//   await clearUserSession(req.user.sessionId)
-//   res.clearCookie("access_token");
-//   res.clearCookie("refresh_token");
-//   res.redirect('/login')
-
-// };
+// logout user
 
 export const logoutUser = async (req, res) => {
   const sessionId = req.user?.sessionId;
-
-  if (sessionId && ObjectId.isValid(sessionId)) {
-    console.log("Clearing session ID:", sessionId);
-    await clearUserSession(sessionId);
-  } else {
-    console.warn("Session ID is missing or invalid:", sessionId);
-  }
-
+  await clearUserSession(sessionId);
   res.clearCookie("access_token");
   res.clearCookie("refresh_token");
   res.redirect("/login");
@@ -275,6 +257,100 @@ export const postChangePassword=async(req,res)=>{
   console.log("data",data);
   return res.redirect("/profile");
 }
+
+
+
+// getResetPasswordPage
+
+export const getResetPasswordPage=async(req,res)=>{
+  return  res.render('auth/forgot-password',{
+     formSubmitted:req.flash("formSubmitted")[0],
+     errors:req.flash("errors"),
+  });
+}
+
+// postForgotPassword
+
+export const postForgotPassword=async(req,res)=>{
+  const {data,error}= forgotPasswordSchema.safeParse(req.body);
+  if(error){
+     const errorMessages=error.errors.map((err)=>err.message);
+     req.flash("errors",errorMessages);
+     return res.redirect("/reset-password");
+  }
+
+  const user= await findUserByEmail(data.email);
+
+  if(user){
+     const resetPasswordLink= await createResetPasswordLink({userId:user._id});
+
+     const html= await getHtmlFromMjmlTemplate('reset-password-email',{
+        name:user.name,
+        link:resetPasswordLink,
+  
+     });
+     // console.log("html", html)
+     sendEmail({
+        to:user.email,
+        subject:"Reset Your Password",
+        html,
+     });
+  }
+  req.flash("formSubmitted",true);
+  return res.redirect("/reset-password");
+  
+}
+
+// getResetPasswordTokenPage
+
+export const getResetPasswordTokenPage = async (req, res) => {
+  const { token } = req.params;
+  // console.log(token);
+
+  const passwordResetData = await getResetPasswordToken(token); 
+
+  if (!passwordResetData) {
+    return res.render('auth/wrong-reset-password-token');
+  }
+
+  return res.render('auth/reset-password', {
+    formSubmitted: req.flash('formSubmitted')[0],
+    errors: req.flash('errors'),
+    token,
+  });
+};
+
+// postResetPasswordToken
+
+export const postResetPasswordToken=async(req,res)=>{
+  const { token } = req.params;
+  const passwordResetData = await getResetPasswordToken(token); 
+
+  if (!passwordResetData) {
+    req.flash("errors","Password Token is not matching.");
+    return res.render('auth/wrong-reset-password-token');
+  }
+
+  const {data,error}=verifyResetPasswordSchema.safeParse(req.body);
+  if(error){
+     const errorMessages=error.errors.map((err)=>err.message);
+     req.flash("errors",errorMessages[0]);
+     return res.redirect(`/reset-password/${token}`);
+  }
+
+  const {newPassword}=data;
+
+  const user=await findUserById(passwordResetData.user_id);
+
+  await clearResetPasswordToken(user._id);
+
+  await updateUserPassword({userId:user._id,newPassword});
+
+  return res.redirect('/login');
+
+
+}
+
 
 
 
