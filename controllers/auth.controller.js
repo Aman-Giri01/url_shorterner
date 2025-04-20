@@ -3,7 +3,7 @@ import { getUserByEmail,createUser, hashPassword, comparePassword , authenticate
 import { loadLinks } from "../models/shortener.model.js";
 import { forgotPasswordSchema, loginUserSchema,registerUserSchema, verifyEmailSchema, verifyPasswordSchema, verifyResetPasswordSchema, verifyUserSchema } from "../validators/auth-validator.js";
 import { getHtmlFromMjmlTemplate } from "../lib/get-html-from-mjmltemplate.js";
-import { sendEmail } from "../lib/send-email.js";
+import { sendEmail } from "../lib/nodeMailer.js";
 export const getRegisterPage=(req,res)=>{
    if(req.user) return res.redirect("/");
    return res.render("auth/register",{errors:req.flash("errors")});
@@ -254,7 +254,7 @@ export const postChangePassword=async(req,res)=>{
   }
 
   await updateUserPassword({userId:user._id,newPassword});
-  console.log("data",data);
+  // console.log("data",data);
   return res.redirect("/profile");
 }
 

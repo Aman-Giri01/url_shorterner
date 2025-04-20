@@ -24,7 +24,7 @@ export const verifyAuthentication=async(req,res,next)=>{
 
     req.user=null
     if(!access_token && !refreshToken){
-        console.log("No tokens found. Setting req.user to null.");
+        // console.log("No tokens found. Setting req.user to null.");
         return next();
     }
 
@@ -32,7 +32,7 @@ export const verifyAuthentication=async(req,res,next)=>{
     {
         const decodedToken=verifyJWTToken(access_token);
         req.user=decodedToken;
-        console.log("req.user: ",req.user);
+        // console.log("req.user: ",req.user);
         return next();
 
     }
@@ -51,7 +51,7 @@ export const verifyAuthentication=async(req,res,next)=>{
 
 
             req.user=user;
-            console.log("new:",req.user);
+            // console.log("new:",req.user);
             
             const baseConfig={httpOnly:true,secure:true}; //this ensures only run on https and cannot get cookie 
             res.cookie("access_token",newaccessToken,{

@@ -45,6 +45,10 @@
           Your verification code:
         </mj-text>
 
+        <mj-text font-size="16px" color="#4b5563" line-height="24px">
+          Valid for 24 hours.
+        </mj-text>
+
         <mj-text
           css-class="token-container"
           font-size="28px"
@@ -109,7 +113,7 @@
           line-height="20px"
           align="center"
         >
-          © 2025  All rights reserved.
+          © Shortify 2025  All rights reserved.
         </mj-text>
         <mj-text
           css-class="footer-text"

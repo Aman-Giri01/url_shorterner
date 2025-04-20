@@ -5,7 +5,7 @@ import crypto from "crypto";
 import path from "path";
 import fs from "fs/promises";
 import mjml2html from "mjml";
-import { sendEmail } from "../lib/send-email.js";
+import { sendEmail } from "../lib/nodeMailer.js";
 import ejs from "ejs";
 import { ObjectId } from "mongodb";
 import { ACCESS_TOKEN_EXPIRY, MILLISECONDS_PER_SECOND, REFRESH_TOKEN_EXPIRY } from "../config/constants.js";
