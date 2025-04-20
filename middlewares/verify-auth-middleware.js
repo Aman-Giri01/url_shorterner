@@ -43,7 +43,9 @@ export const verifyAuthentication=async(req,res,next)=>{
             const tokens = await refreshTokens(refreshToken);
 
             if (!tokens) {
-            console.error("refreshTokens returned undefined or null");
+            console.error("refreshTokens returned undefined or null"); 
+            res.clearCookie("access_token");
+            res.clearCookie("refresh_token");
             return res.status(401).json({ error: "Unauthorized" });
             }
 
@@ -68,6 +70,9 @@ export const verifyAuthentication=async(req,res,next)=>{
 
         } catch (error) {
             console.log(error.message);
+            res.clearCookie("access_token");
+            res.clearCookie("refresh_token");
+            return res.status(401).json({ error: "Unauthorized" });
         }
     }
 
