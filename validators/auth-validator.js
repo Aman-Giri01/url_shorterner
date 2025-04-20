@@ -26,7 +26,7 @@ export const registerUserSchema = loginUserSchema.extend({
 });
 
 export const verifyEmailSchema = z.object({
-  token: z.string().trim().length(8),
+  token: z.string().trim().length(4),
   email: z.string().trim().email(),
 });
 

@@ -1,3 +1,4 @@
+import { ObjectId } from "mongodb";
 import { getUserByEmail,createUser, hashPassword, comparePassword , authenticateUser, clearUserSession, findUserById, sendNewVerifyEmailLink, findVerificationEmailToken, verifyUserEmailAndUpdate, clearVerifyEmailTokens, updateUserByName, updateUserPassword} from "../models/auth.model.js";
 import { loadLinks } from "../models/shortener.model.js";
 import { loginUserSchema,registerUserSchema, verifyEmailSchema, verifyPasswordSchema, verifyUserSchema } from "../validators/auth-validator.js";
@@ -109,14 +110,30 @@ export const postRegister = async (req, res) => {
 
 //  };
 
-export const logoutUser=async(req,res)=>{
+// export const logoutUser=async(req,res)=>{
 
-  await clearUserSession(req.user.sessionId)
+//   await clearUserSession(req.user.sessionId)
+//   res.clearCookie("access_token");
+//   res.clearCookie("refresh_token");
+//   res.redirect('/login')
+
+// };
+
+export const logoutUser = async (req, res) => {
+  const sessionId = req.user?.sessionId;
+
+  if (sessionId && ObjectId.isValid(sessionId)) {
+    console.log("Clearing session ID:", sessionId);
+    await clearUserSession(sessionId);
+  } else {
+    console.warn("Session ID is missing or invalid:", sessionId);
+  }
+
   res.clearCookie("access_token");
   res.clearCookie("refresh_token");
-  res.redirect('/login')
-
+  res.redirect("/login");
 };
+
 
 // get profile page
 
@@ -178,8 +195,8 @@ export const verifyEmailToken= async(req,res)=>{
      return res.send("Verification link invalid or expires!");
   }
   const token= await findVerificationEmailToken(data);
-  console.log("verificationEmailToken :",token);
-  if(!token) res.send("Verification link invalid or expired!");
+  // console.log("verificationEmailToken :",token);
+  if(!token) return res.send("Verification link invalid or expired!");
 
   await verifyUserEmailAndUpdate(token.email);
 
