@@ -41,7 +41,13 @@ router.route('/reset-password')
 
 router.route('/reset-password/:token')
 .get(authControllers.getResetPasswordTokenPage)
-.post(authControllers.postResetPasswordToken)
+.post(authControllers.postResetPasswordToken);
+
+router.route('/google')
+.get(authControllers.getGoogleLoginPage);
+
+router.route('/google/callback')
+.get(authControllers.getGoogleLoginCallback);
 
 
 

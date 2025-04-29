@@ -12,6 +12,7 @@ import { ACCESS_TOKEN_EXPIRY, MILLISECONDS_PER_SECOND, REFRESH_TOKEN_EXPIRY } fr
 
 const db = dbClient.db(process.env.MONGODB_DATABASE_NAME);
 const usersCollection = db.collection("users");
+const oauthAccountsCollection = db.collection('oauth_accounts');
 
 // Get user by email
 export const getUserByEmail = async (email) => {
@@ -336,3 +337,103 @@ export const clearResetPasswordToken = async (userId) => {
     user_id: new ObjectId(userId),
   });
 };
+
+
+// Get user with OAuth ID
+export const getUserWithOauthId = async ({ email, provider }) => {
+  const user = await usersCollection.aggregate([
+    { $match: { email } },
+    {
+      $lookup: {
+        from: 'oauth_accounts',
+        let: { userId: '$_id' },
+        pipeline: [
+          { $match: { $expr: { $and: [{ $eq: ['$user_id', '$$userId'] }, { $eq: ['$provider', provider] }] } } },
+          { $project: { provider_account_id: 1, provider: 1, _id: 0 } }
+        ],
+        as: 'oauth'
+      }
+    },
+    {
+      $addFields: {
+        providerAccountId: { $arrayElemAt: ['$oauth.provider_account_id', 0] },
+        provider: { $arrayElemAt: ['$oauth.provider', 0] }
+      }
+    },
+    {
+      $project: {
+        _id: 1,
+        name: 1,
+        email: 1,
+        isEmailValid: '$is_email_valid',
+        providerAccountId: 1,
+        provider: 1
+      }
+    }
+  ]).toArray();
+
+  return user[0] || null;
+};
+
+// Link user with OAuth (used after email signup)
+export const linkUserWithOauth = async ({ userId, provider, providerAccountId }) => {
+  await oauthAccountsCollection.insertOne({
+    user_id: new ObjectId(userId),
+    provider,
+    provider_account_id: providerAccountId,
+    created_at: new Date()
+  });
+};
+
+// Create new user with OAuth
+export const createUserWithOauth = async ({ name, email, provider, providerAccountId }) => {
+  const session = dbClient.startSession();
+
+  try {
+    let newUser;
+    await session.withTransaction(async () => {
+      // Insert into users
+      const userInsertResult = await usersCollection.insertOne(
+        {
+          name,
+          email,
+          password: null,
+          is_email_valid: true,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        },
+        { session }
+      );
+
+      const userId = userInsertResult.insertedId;
+
+      // Insert into oauth_accounts
+      await oauthAccountsCollection.insertOne(
+        {
+          user_id: userId,
+          provider,
+          provider_account_id: providerAccountId,
+          created_at: new Date()
+        },
+        { session }
+      );
+
+      newUser = {
+        id: userId,
+        name,
+        email,
+        isEmailValid: true,
+        provider,
+        providerAccountId
+      };
+    });
+
+    return newUser;
+  } catch (error) {
+    console.error('Transaction Error:', error);
+    throw error;
+  } finally {
+    await session.endSession();
+  }
+};
+

@@ -1,9 +1,12 @@
 import { ObjectId } from "mongodb";
-import { getUserByEmail,createUser, hashPassword, comparePassword , authenticateUser, clearUserSession, findUserById, sendNewVerifyEmailLink, findVerificationEmailToken, verifyUserEmailAndUpdate, clearVerifyEmailTokens, updateUserByName, updateUserPassword, findUserByEmail, createResetPasswordLink, getResetPasswordToken, clearResetPasswordToken} from "../models/auth.model.js";
+import { getUserByEmail,createUser, hashPassword, comparePassword , authenticateUser, clearUserSession, findUserById, sendNewVerifyEmailLink, findVerificationEmailToken, verifyUserEmailAndUpdate, clearVerifyEmailTokens, updateUserByName, updateUserPassword, findUserByEmail, createResetPasswordLink, getResetPasswordToken, clearResetPasswordToken, linkUserWithOauth, createUserWithOauth, getUserWithOauthId} from "../models/auth.model.js";
 import { loadLinks } from "../models/shortener.model.js";
 import { forgotPasswordSchema, loginUserSchema,registerUserSchema, verifyEmailSchema, verifyPasswordSchema, verifyResetPasswordSchema, verifyUserSchema } from "../validators/auth-validator.js";
 import { getHtmlFromMjmlTemplate } from "../lib/get-html-from-mjmltemplate.js";
 import { sendEmail } from "../lib/nodeMailer.js";
+import { decodeIdToken, generateCodeVerifier, generateState } from "arctic";
+import { google } from "../lib/oauth/google.js";
+import { OAUTH_EXCHANGE_EXPIRY } from "../config/constants.js";
 export const getRegisterPage=(req,res)=>{
    if(req.user) return res.redirect("/");
    return res.render("auth/register",{errors:req.flash("errors")});
@@ -37,6 +40,14 @@ export const postLogin=async(req,res)=>{
       req.flash("errors","Invalid Email or Password");
       return res.redirect("/login");
    }
+
+   if(!user.password){
+    req.flash(
+       "errors",
+       "You have created account using social login. Please login with your social account."
+    );
+    return res.redirect('/login');
+ }
 
    const isPasswordValid= await comparePassword(password,user.password);
 
@@ -350,6 +361,95 @@ export const postResetPasswordToken=async(req,res)=>{
 
 
 }
+
+// getGoogleLoginPage
+
+export const getGoogleLoginPage = async (req, res) => {
+  if (req.user) return res.redirect('/');
+
+  const state = generateState();
+  const codeVerifier = generateCodeVerifier();
+  const url = google.createAuthorizationURL(state, codeVerifier, [
+    'openid',
+    'profile',
+    'email',
+  ]);
+
+  const cookieConfig = {
+    httpOnly: true,
+    secure: true,
+    maxAge: OAUTH_EXCHANGE_EXPIRY,
+    sameSite: 'lax',
+  };
+
+  res.cookie('google_oauth_state', state, cookieConfig);
+  res.cookie('google_code_verifier', codeVerifier, cookieConfig);
+
+  res.redirect(url.toString());
+};
+
+// getGoogleLoginCallback
+
+export const getGoogleLoginCallback = async (req, res) => {
+  const { code, state } = req.query;
+
+  const {
+    google_oauth_state: storedState,
+    google_code_verifier: codeVerifier,
+  } = req.cookies;
+
+  if (!code || !state || !codeVerifier || state !== storedState) {
+    req.flash(
+      'errors',
+      "Couldn't login with Google due to an invalid login attempt. Please try again!"
+    );
+    return res.redirect('/login');
+  }
+
+  let tokens;
+  try {
+    tokens = await google.validateAuthorizationCode(code, codeVerifier);
+  } catch {
+    req.flash(
+      'errors',
+      "Couldn't login with Google due to an invalid login attempt. Please try again!"
+    );
+    return res.redirect('/login');
+  }
+
+  const claims = decodeIdToken(tokens.idToken());
+  const { sub: googleUserID, name, email } = claims;
+
+  // 1. Check if user exists and is linked
+  let user = await getUserWithOauthId({
+    provider: 'google',
+    email,
+  });
+
+  // 2. If user exists but isn't linked yet
+  if (user && !user.providerAccountId) {
+    await linkUserWithOauth({
+      userId: user._id, 
+      provider: 'google',
+      providerAccountId: googleUserID,
+    });
+  }
+
+  // 3. If user doesn't exist at all
+  if (!user) {
+    user = await createUserWithOauth({
+      name,
+      email,
+      provider: 'google',
+      providerAccountId: googleUserID,
+    });
+  }
+
+  // 4. Log the user in
+  await authenticateUser({ req, res, user, name, email }); // Assuming it works with MongoDB user object
+
+  res.redirect('/');
+};
 
 
 
